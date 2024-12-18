@@ -1,0 +1,2 @@
+string description
+duration patrol_time

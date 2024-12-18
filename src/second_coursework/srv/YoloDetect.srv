@@ -1,0 +1,7 @@
+# Request
+
+---
+# Response: Arrays of poses for each detected category
+geometry_msgs/Pose[] people_positions
+geometry_msgs/Pose[] cats_positions
+geometry_msgs/Pose[] dogs_positions

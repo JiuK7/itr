@@ -1,0 +1,25 @@
+<launch>
+    <!-- Argument for the video folder path -->
+    <arg name="vid_folder" default="/home/jiu/itr2_test_videos" />
+
+    <!-- Main Node (Python) -->
+    <node name="main_node" pkg="second_coursework" type="main_node.py" output="screen" launch-prefix="python3">
+    </node>
+
+    <!-- Action Server Node (Python) -->
+    <node name="actionserver_node" pkg="second_coursework" type="actionlib_node.py" output="screen" launch-prefix="python3">
+    </node>
+
+    <!-- Video Player Node (Python) -->
+    <node name="video_player_node" pkg="second_coursework" type="emergency_patrol_sm.py" output="screen" launch-prefix="python3">
+        <param name="video_folder" value="$(arg vid_folder)" />
+    </node>
+
+    <!-- Include ROSPlan Stage Demo -->
+    <include file="$(find rosplan_stage_demo)/launch/empty_stage_single_robot.launch">
+    </include>
+
+    <!-- RViz Node -->
+    <node name="rviz" pkg="rviz" type="rviz" output="screen" args="-d $(find rosplan_stage_demo)/config/rosplan_stage_demo.rviz">
+    </node>
+</launch>

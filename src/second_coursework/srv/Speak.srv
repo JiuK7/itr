@@ -1,0 +1,5 @@
+# Request: text to say
+string text
+---
+# Response: Indicates if the TTS was successful
+bool success

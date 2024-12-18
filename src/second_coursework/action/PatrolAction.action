@@ -1,0 +1,15 @@
+# goal
+duration patrol_time
+
+---
+# result
+geometry_msgs/Pose[] people_positions
+geometry_msgs/Pose[] cat_positions
+geometry_msgs/Pose[] dog_positions
+
+---
+# feedback
+int32 people_found_since_last
+int32 cats_found_since_last
+int32 dogs_found_since_last
+geometry_msgs/Pose last_detection_position
