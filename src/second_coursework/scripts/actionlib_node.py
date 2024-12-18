@@ -2,23 +2,26 @@
 import rospy
 import actionlib
 from second_coursework.msg import (
-    PatrolAction,
-    PatrolFeedback,
-    PatrolResult
+    PatrolActionAction,
+    PatrolActionGoal,
+    PatrolActionResult,
+    PatrolActionFeedback,
 )
+
+
 from geometry_msgs.msg import Pose
 
 class PatrolServer:
     def __init__(self):
         # The server is named "patrol_action". Make sure the client uses the same name.
-        self.server = actionlib.SimpleActionServer("patrol_action", PatrolAction, self.execute, False)
+        self.server = actionlib.SimpleActionServer("patrol_action", PatrolActionAction, self.execute, False)
         self.server.start()
 
     def execute(self, goal):
         rospy.loginfo("Patrol started. Duration: %.1f seconds" % goal.patrol_time.to_sec())
 
-        feedback = PatrolFeedback()
-        result = PatrolResult()
+        feedback = PatrolActionFeedback()
+        result = PatrolActionResult()
 
         # Initialize feedback fields if needed
         feedback.people_found_since_last = 0

@@ -2,8 +2,15 @@
 
 import rospy
 import actionlib
-from second_coursework.msg import Emergency 
-from second_coursework.msg import PatrolAction, PatrolGoal, PatrolResult, PatrolFeedback
+from second_coursework.msg import (
+    PatrolActionAction,
+    PatrolActionGoal,
+    PatrolActionResult,
+    PatrolActionFeedback,
+    Emergency,
+)
+
+
 from geometry_msgs.msg import Pose
 
 class MainNode:
@@ -11,9 +18,9 @@ class MainNode:
         # Subscribe to the /emergency topic to receive emergency messages
         self.emergency_sub = rospy.Subscriber('/emergency', Emergency, self.emergency_callback, queue_size=1)
 
-        # Create an action client for the PatrolAction server
+        # Create an action client for the PatrolActionAction server
         # Ensure that "patrol_action_server" matches the name used in actionlib_node.py
-        self.client = actionlib.SimpleActionClient('patrol_action_server', PatrolAction)
+        self.client = actionlib.SimpleActionClient('patrol_action_server', PatrolActionAction)
 
         rospy.loginfo("Main Node initialized. Waiting for /emergency messages...")
 
@@ -31,7 +38,7 @@ class MainNode:
         self.client.wait_for_server()  # Wait until the action server is up
 
         # Create a goal to send to the action server
-        goal = PatrolGoal()
+        goal = PatrolActionGoal()
         goal.patrol_time = patrol_time
 
         rospy.loginfo("Sending goal to the patrol action server...")
@@ -47,7 +54,7 @@ class MainNode:
         else:
             rospy.logwarn("Action did not finish before the %.1f-second timeout." % timeout)
 
-    def feedback_callback(self, feedback: PatrolFeedback):
+    def feedback_callback(self, feedback: PatrolActionFeedback):
         # Throttle feedback prints to once every 5 seconds to avoid spam
         rospy.loginfo_throttle(5,
             f"[Feedback] People: {feedback.people_found_since_last}, "
@@ -57,7 +64,7 @@ class MainNode:
             f"y={feedback.last_detection_position.position.y:.2f})"
         )
 
-    def process_result(self, result: PatrolResult):
+    def process_result(self, result: PatrolActionResult):
         # Process the final results from the action server
         people_count = len(result.people_positions)
         cats_count = len(result.cat_positions)

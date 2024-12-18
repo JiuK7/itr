@@ -3,7 +3,7 @@
 import rospy
 import smach
 from geometry_msgs.msg import Pose
-from your_action_package.msg import PatrolResult  # Update with your actual action package and result msg
+from second_coursework.msg import PatrolActionResult  # Update with your actual action package and result msg
 
 def finish_callback(userdata, request):
     """
@@ -11,12 +11,12 @@ def finish_callback(userdata, request):
 
     This function:
     - Gathers the final list of detected people, cats, and dogs from userdata.
-    - Prepares a PatrolResult message.
+    - Prepares a PatrolActionResult message.
     - Calls set_succeeded(result) on the action server to signal completion.
     """
     rospy.loginfo("[FINISH] Preparing final result...")
 
-    result = PatrolResult()
+    result = PatrolActionResult()
     # Assuming these arrays are geometry_msgs/Pose[] as defined in your action
     result.people_positions = userdata.detected_people
     result.cats_positions = userdata.detected_cats

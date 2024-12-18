@@ -1,25 +1,35 @@
 #!/usr/bin/env python3
 
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
 import rospy
 import smach
 import smach_ros
 import actionlib
 
 # Import the action definitions
-from second_coursework.msg import PatrolAction, PatrolGoal, PatrolResult, PatrolFeedback
+from second_coursework.msg import (
+    PatrolActionAction,
+    PatrolActionGoal,
+    PatrolActionResult,
+    PatrolActionFeedback,
+    Emergency,
+)
 
 # Import your states (assuming they are in the same package or in the PYTHONPATH)
 # Make sure the file names and the callback symbols match what you defined previously.
-from init_state import init_callback
-from select_next_room_state import select_next_room_callback
-from detect_objects_state import detect_objects_callback
-from report_and_feedback_state import report_and_feedback_callback
+from states.initialization import init_callback
+from states.select_next_room import select_next_room_callback
+from states.detect_objects import detect_objects_callback
+from states.report_and_feedback import report_and_feedback_callback
 # For SimpleActionStates, we just imported the code. Ensure navigate_room_state.py and return_to_e_state.py are accessible.
 # The navigate and return states were SimpleActionStates; we can define them inline here or just import their goal_cb if needed.
 # Assuming goal_callbacks defined as `goal_callback` in navigate_room_state.py and return_to_e_state.py:
-from navigate_room_state import goal_callback as navigate_goal_cb
-from return_to_e_state import goal_callback as return_goal_cb
-from finish_state import finish_callback
+from states.navigate_room import nav_goal_cb as navigate_goal_cb
+from states.return_to_e import goal_callback as return_goal_cb
+from states.finish import finish_callback
 
 # Messages
 from geometry_msgs.msg import PoseStamped
@@ -141,22 +151,19 @@ def main():
                                              input_keys=['detected_people','detected_cats','detected_dogs','set_succeeded']),
                                transitions={'done':'ACTION_SUCCEEDED'})
 
-    # Wrap the state machine in an ActionServerWrapper to expose it as a PatrolAction
+    # Wrap the state machine in an ActionServerWrapper to expose it as a PatrolActionAction
     # The ActionServerWrapper will:
     # - Convert action goals into userdata (patrol_time)
     # - Provide set_succeeded, publish_feedback callbacks through userdata
     asw = smach_ros.ActionServerWrapper(
         server_name='patrol_action_server',
-        action_spec=PatrolAction,
+        action_spec=PatrolActionAction,
         wrapped_container=sm,
         succeeded_outcomes=['ACTION_SUCCEEDED'],
         aborted_outcomes=['ACTION_ABORTED'],
         preempted_outcomes=['ACTION_PREEMPTED'],
         goal_key='patrol_time',  # The goal has a field 'patrol_time'
-        feedback_callback=lambda ud, fb: fb,  # We'll send feedback from the states using publish_feedback
         result_key=None,  # We provide the result in FINISH state via set_succeeded
-        # These provide publish_feedback and set_succeeded in userdata
-        preempted_cb=lambda: rospy.loginfo("Patrol preempted")
     )
 
     # Add the ability for states to publish feedback and set result

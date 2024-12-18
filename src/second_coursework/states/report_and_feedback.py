@@ -3,7 +3,7 @@
 import rospy
 import smach
 from geometry_msgs.msg import Pose
-from your_custom_package.srv import SayText, SayTextRequest  # Update with your actual package and srv name
+from second_coursework.srv import Speak, SpeakResponse
 from visualization_msgs.msg import Marker
 
 # Marker types
@@ -52,10 +52,10 @@ def report_and_feedback_callback(userdata, request):
     if new_people:
         try:
             rospy.wait_for_service('/text_to_speech', timeout=5.0)
-            tts_srv = rospy.ServiceProxy('/text_to_speech', SayText)
+            tts_srv = rospy.ServiceProxy('/text_to_speech', Speak)
             # Construct a message - for simplicity, just count how many people
             text_msg = "I see " + str(len(new_people)) + " new person" + ("" if len(new_people) == 1 else "s")
-            resp = tts_srv(SayTextRequest(text=text_msg))
+            resp = tts_srv(SpeakRequest(text=text_msg))
             if resp:
                 rospy.loginfo("[REPORT_AND_FEEDBACK] TTS announcement made: %s", text_msg)
         except (rospy.ServiceException, rospy.ROSException) as e:

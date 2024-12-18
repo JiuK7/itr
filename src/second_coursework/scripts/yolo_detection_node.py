@@ -2,7 +2,7 @@
 
 import rospy
 from geometry_msgs.msg import Pose
-from your_custom_package.srv import YoloDetect, YoloDetectResponse
+from second_coursework.srv import YoloDetect, YoloDetectResponse
 
 def run_yolo_detection():
     """

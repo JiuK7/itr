@@ -4,7 +4,7 @@ import rospy
 import smach
 import time
 from geometry_msgs.msg import Pose
-from your_custom_package.srv import YoloDetect, YoloDetectRequest  # Update with your actual package and srv name
+from second_coursework.srv import YoloDetect, YoloDetectRequest  # Update with your actual package and srv name
 
 
 def detect_objects_callback(userdata, request):
