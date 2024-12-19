@@ -3,7 +3,7 @@
 import rospy
 import smach
 from geometry_msgs.msg import Pose
-from second_coursework.srv import Speak, SpeakResponse
+from second_coursework.srv import Speak, SpeakRequest, SpeakResponse
 from visualization_msgs.msg import Marker
 
 # Marker types
@@ -13,16 +13,16 @@ DOGS_MARKER_TYPE = Marker.CYLINDER
 
 # Colors (R,G,B)
 # People: new = red, old = blue
-PEOPLE_NEW_COLOR = (1.0, 0.0, 0.0)   # red
-PEOPLE_OLD_COLOR = (0.0, 0.0, 1.0)   # blue
+PEOPLE_NEW_COLOR = (1.0, 0.0, 0.0)  # red
+PEOPLE_OLD_COLOR = (0.0, 0.0, 1.0)  # blue
 
 # Cats: new = green, old = darker green
-CATS_NEW_COLOR = (0.0, 1.0, 0.0)     # green
-CATS_OLD_COLOR = (0.0, 0.5, 0.0)     # dark green
+CATS_NEW_COLOR = (0.0, 1.0, 0.0)  # green
+CATS_OLD_COLOR = (0.0, 0.5, 0.0)  # dark green
 
 # Dogs: new = yellow, old = darker yellow
-DOGS_NEW_COLOR = (1.0, 1.0, 0.0)     # yellow
-DOGS_OLD_COLOR = (0.5, 0.5, 0.0)     # dark yellow
+DOGS_NEW_COLOR = (1.0, 1.0, 0.0)  # yellow
+DOGS_OLD_COLOR = (0.5, 0.5, 0.0)  # dark yellow
 
 
 def report_and_feedback_callback(userdata, request):
@@ -33,7 +33,7 @@ def report_and_feedback_callback(userdata, request):
     - Identifies new detections not seen previously.
     - If new people are found, triggers TTS to announce them.
     - Updates main detected lists with newly found entities.
-    - Publishes feedback.
+    - Publishes feedback for every new detection of people.
     - Publishes visualization markers for all currently known detections,
       with different shapes and colors for newly found vs. previously known.
     """
@@ -53,35 +53,31 @@ def report_and_feedback_callback(userdata, request):
         try:
             rospy.wait_for_service('/text_to_speech', timeout=5.0)
             tts_srv = rospy.ServiceProxy('/text_to_speech', Speak)
-            # Construct a message - for simplicity, just count how many people
-            text_msg = "I see " + str(len(new_people)) + " new person" + ("" if len(new_people) == 1 else "s")
+            # Updated message as per requirements:
+            text_msg = "Help is on the way. Please evacuate if you are able."
             resp = tts_srv(SpeakRequest(text=text_msg))
             if resp:
                 rospy.loginfo("[REPORT_AND_FEEDBACK] TTS announcement made: %s", text_msg)
         except (rospy.ServiceException, rospy.ROSException) as e:
             rospy.logerr("[REPORT_AND_FEEDBACK] Failed to call TTS service: %s", e)
 
-    # Update the master lists with newly detected entities
-    userdata.detected_people.extend(new_people)
+        # Publish feedback immediately for new people detections
+        if hasattr(userdata, 'publish_feedback') and callable(userdata.publish_feedback):
+            feedback_msg = {
+                "new_people_count": len(new_people),
+                "total_people_count": len(previously_known_people) + len(new_people)
+            }
+            userdata.publish_feedback(feedback_msg)
+            rospy.loginfo("[REPORT_AND_FEEDBACK] New person feedback published: %s", feedback_msg)
+
+        # Update the master lists with newly detected entities
+        userdata.detected_people.extend(new_people)
+
+    # Update detected cats and dogs as well
     userdata.detected_cats.extend(new_cats)
     userdata.detected_dogs.extend(new_dogs)
 
-    # Publish feedback if function is available
-    if hasattr(userdata, 'publish_feedback') and callable(userdata.publish_feedback):
-        feedback_msg = {
-            "new_people_count": len(new_people),
-            "new_cats_count": len(new_cats),
-            "new_dogs_count": len(new_dogs),
-            "total_people_count": len(userdata.detected_people),
-            "total_cats_count": len(userdata.detected_cats),
-            "total_dogs_count": len(userdata.detected_dogs)
-        }
-        userdata.publish_feedback(feedback_msg)
-        rospy.loginfo("[REPORT_AND_FEEDBACK] Feedback published: %s", feedback_msg)
-
     # Publish visualization markers
-    # Markers will be published for all known detections (both old and newly found)
-    # New detections are shown in 'new' colors, old in 'old' colors.
     marker_pub = userdata.marker_pub  # Access the publisher from userdata
 
     def publish_markers(detections, marker_type, new_set, color_new, color_old, start_id):
@@ -94,7 +90,17 @@ def report_and_feedback_callback(userdata, request):
             marker.id = current_id
             marker.type = marker_type
             marker.action = Marker.ADD
-            marker.pose = p
+
+            # Ensure Pose is a geometry_msgs/Pose object
+            if isinstance(p, dict):
+                pose_obj = Pose()
+                pose_obj.position.x = p['position']['x']
+                pose_obj.position.y = p['position']['y']
+                pose_obj.position.z = p['position']['z']
+                marker.pose = pose_obj
+            else:
+                marker.pose = p
+
             marker.scale.x = 0.2
             marker.scale.y = 0.2
             marker.scale.z = 0.2
@@ -148,7 +154,8 @@ def main():
     sm.userdata.detected_dogs = []
 
     # For testing, we found one new person
-    sm.userdata.current_detected_people = [Pose(position=dict(x=1.0, y=2.0, z=0.0))]
+    # Using dict here as in original snippet; convert to Pose if needed.
+    sm.userdata.current_detected_people = [{'position': {'x': 1.0, 'y': 2.0, 'z': 0.0}}]
     sm.userdata.current_detected_cats = []
     sm.userdata.current_detected_dogs = []
 
@@ -166,7 +173,7 @@ def main():
                                                          'current_detected_people',
                                                          'current_detected_cats',
                                                          'current_detected_dogs',
-                                                         'marker_pub'],  # include marker_pub
+                                                         'marker_pub'],
                                              output_keys=['detected_people',
                                                           'detected_cats',
                                                           'detected_dogs',

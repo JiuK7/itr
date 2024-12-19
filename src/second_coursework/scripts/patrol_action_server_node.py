@@ -2,8 +2,6 @@
 
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-
 import rospy
 import smach
 import smach_ros
@@ -19,14 +17,10 @@ from second_coursework.msg import (
 )
 
 # Import your states (assuming they are in the same package or in the PYTHONPATH)
-# Make sure the file names and the callback symbols match what you defined previously.
 from states.initialization import init_callback
 from states.select_next_room import select_next_room_callback
 from states.detect_objects import detect_objects_callback
 from states.report_and_feedback import report_and_feedback_callback
-# For SimpleActionStates, we just imported the code. Ensure navigate_room_state.py and return_to_e_state.py are accessible.
-# The navigate and return states were SimpleActionStates; we can define them inline here or just import their goal_cb if needed.
-# Assuming goal_callbacks defined as `goal_callback` in navigate_room_state.py and return_to_e_state.py:
 from states.navigate_room import nav_goal_cb as navigate_goal_cb
 from states.return_to_e import goal_callback as return_goal_cb
 from states.finish import finish_callback
@@ -120,9 +114,10 @@ def main():
         # DETECT_OBJECTS
         smach.StateMachine.add('DETECT_OBJECTS',
                                smach.CBState(detect_objects_callback,
-                                             outcomes=['done'],
+                                             outcomes=['done', 'aborted'],
                                              output_keys=['current_detected_people','current_detected_cats','current_detected_dogs']),
-                               transitions={'done':'REPORT_AND_FEEDBACK'})
+                               transitions={'done':'REPORT_AND_FEEDBACK',
+                                            'aborted':'ACTION_ABORTED'})
 
         # REPORT_AND_FEEDBACK
         smach.StateMachine.add('REPORT_AND_FEEDBACK',
@@ -152,9 +147,6 @@ def main():
                                transitions={'done':'ACTION_SUCCEEDED'})
 
     # Wrap the state machine in an ActionServerWrapper to expose it as a PatrolActionAction
-    # The ActionServerWrapper will:
-    # - Convert action goals into userdata (patrol_time)
-    # - Provide set_succeeded, publish_feedback callbacks through userdata
     asw = smach_ros.ActionServerWrapper(
         server_name='patrol_action_server',
         action_spec=PatrolActionAction,
@@ -174,10 +166,11 @@ def main():
     # If not, we can wrap it:
     def set_succeeded_cb(ud, result):
         asw.set_succeeded(result)
+
     def publish_feedback_cb(ud, feedback):
         asw.publish_feedback(feedback)
 
-    # Inject these into the top-level sm userdata (optional approach)
+    # Inject these into the top-level sm userdata
     sm.userdata.set_succeeded = set_succeeded_cb
     sm.userdata.publish_feedback = publish_feedback_cb
 

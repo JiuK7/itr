@@ -26,11 +26,15 @@
     <!-- Include ROSPlan Stage Demo -->
     <include file="$(find rosplan_stage_demo)/launch/empty_stage_single_robot.launch">
     </include>
+
+        <!-- Ensure the video player node is included -->
+    <node name="vid_player" pkg="second_coursework" type="itr_cw2425CS" output="screen">
+        <param name="video_folder" value="/path/to/videos"/>
+        <param name="num_locations" value="8"/>
+        <param name="radius" value="2"/>
+    </node>
 </launch>
 
 
-    <!-- Video Player Node (Python)
-    <node name="video_player_node" pkg="second_coursework" type="emergency_patrol_sm.py" output="screen" launch-prefix="python3">
-        <param name="video_folder" value="$(arg vid_folder)" />
-    </node> -->
+
 
